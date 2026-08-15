@@ -1,5 +1,9 @@
 """Grade ordering helpers for the V scale (bouldering) and YDS (routes)."""
 
+# Outcomes that count as having climbed the thing cleanly, as opposed to still
+# working it. Shared by the stats, coach, and training layers.
+SEND_TYPES: tuple[str, ...] = ("flash", "onsight", "redpoint", "repeat")
+
 V_SCALE: list[str] = ["VB"] + [f"V{i}" for i in range(18)]
 
 YDS: list[str] = ["5.5", "5.6", "5.7", "5.8", "5.9"] + [

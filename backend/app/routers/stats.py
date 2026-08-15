@@ -7,13 +7,11 @@ from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
 from ..database import get_db
-from ..grades import grade_sort_key
+from ..grades import SEND_TYPES, grade_sort_key
 from ..models import Climb, TrainingSession, User
 from ..schemas import AngleEntry, ProgressPoint, PyramidEntry, StatsSummary
 
 router = APIRouter(prefix="/stats", tags=["stats"])
-
-SEND_TYPES = ("flash", "onsight", "redpoint", "repeat")
 
 
 def _user_climbs(user: User, db: Session) -> list[Climb]:
