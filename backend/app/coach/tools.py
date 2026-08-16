@@ -15,11 +15,8 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..grades import grade_sort_key
+from ..grades import SEND_TYPES, grade_sort_key
 from ..models import Climb, PoseAnalysis, TrainingSession, User, Video
-
-# Send types that count as "climbed it clean", mirroring the stats router.
-SEND_TYPES = ("flash", "onsight", "redpoint", "repeat")
 
 # Ceilings so a chatty tool call can't blow out the context window.
 MAX_CLIMBS = 60
@@ -141,6 +138,20 @@ TOOL_DEFINITIONS: list[dict] = [
                 }
             },
         },
+    },
+    {
+        "name": "get_weaknesses",
+        "description": (
+            "The athlete's ranked weaknesses, weakest first, each with a 0-100 "
+            "score (lower is weaker), the evidence behind it, and what it implies. "
+            "Covers wall-angle coverage, pyramid base, movement quality, first-go "
+            "rate, strength work, consistency, recovery load, and volume trend. "
+            "Call this for 'what should I work on' or 'what's holding me back' — "
+            "it is the same analysis the training plan generator uses, so your "
+            "answer will line up with any plan they have. Also returns data_gaps: "
+            "things they aren't logging that would sharpen the picture."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
     },
     {
         "name": "get_video_analysis",
@@ -356,8 +367,32 @@ def _get_video_analysis(user: User, db: Session, args: dict) -> dict:
     }
 
 
+def _weaknesses(user: User, db: Session, args: dict) -> dict:
+    # Imported here so the coach package doesn't depend on the training package
+    # at import time — they are independent features that happen to share data.
+    from ..training.snapshot import build_snapshot
+    from ..training.weaknesses import detect_weaknesses
+
+    report = detect_weaknesses(build_snapshot(user, db))
+    return {
+        "weaknesses": [
+            {
+                "key": w.key,
+                "label": w.label,
+                "score": w.score,
+                "severity": w.severity,
+                "summary": w.summary,
+                "evidence": w.evidence,
+            }
+            for w in report.weaknesses
+        ],
+        "data_gaps": report.data_gaps,
+    }
+
+
 _DISPATCH = {
     "get_training_summary": _training_summary,
+    "get_weaknesses": _weaknesses,
     "get_recent_climbs": _recent_climbs,
     "get_grade_pyramid": _grade_pyramid,
     "get_recent_sessions": _recent_sessions,
