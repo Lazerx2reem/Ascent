@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import auth, climbs, coach, sessions, stats, videos
+from .routers import auth, climbs, coach, sessions, stats, training, videos
 
 app = FastAPI(title="Ascent API", version="0.1.0")
 
@@ -20,6 +20,7 @@ app.include_router(sessions.router)
 app.include_router(stats.router)
 app.include_router(videos.router)
 app.include_router(coach.router)
+app.include_router(training.router)
 
 
 @app.get("/health", tags=["meta"])

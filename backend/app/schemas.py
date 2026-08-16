@@ -264,3 +264,72 @@ class ConversationCreate(BaseModel):
 
 class CoachMessageCreate(BaseModel):
     content: str = Field(min_length=1, max_length=4000)
+
+
+# ---------- Weakness detection & training plans ----------
+
+
+class WeaknessOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    key: str
+    label: str
+    focus: str
+    score: int  # 0-100, lower = weaker
+    severity: str  # high / moderate / low
+    summary: str
+    evidence: list[str]
+    advice: str
+
+
+class WeaknessReportOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    weaknesses: list[WeaknessOut]
+    data_gaps: list[str]
+
+
+class PlanBlockOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    exercise: str
+    detail: str
+    sets: int
+
+
+class PlannedSessionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    week: int
+    day: int
+    title: str
+    session_type: str
+    focus: str
+    blocks: list[PlanBlockOut]
+    notes: str
+
+
+class TrainingPlanOut(BaseModel):
+    """List row — no session detail."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    weeks: int
+    days_per_week: int
+    summary: str
+    focus_areas: list[str]
+    created_at: datetime
+
+
+class TrainingPlanDetailOut(TrainingPlanOut):
+    cautions: list[str]
+    sessions: list[PlannedSessionOut]
+    weaknesses: list[WeaknessOut]
+
+
+class TrainingPlanCreate(BaseModel):
+    weeks: int = Field(default=4, ge=1, le=12)
+    days_per_week: int = Field(default=3, ge=1, le=6)
+    title: str | None = Field(default=None, max_length=120)
