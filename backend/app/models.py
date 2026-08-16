@@ -45,6 +45,9 @@ class User(Base):
     conversations: Mapped[list["Conversation"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    plans: Mapped[list["TrainingPlan"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Climb(Base):
@@ -251,3 +254,34 @@ class CoachMessage(Base):
     )
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+class TrainingPlan(Base):
+    """A generated training block, frozen at the moment it was created.
+
+    The plan body and the weaknesses it was built from are both stored, so an
+    old plan stays interpretable after the logbook has moved on — regenerating
+    from today's data would silently rewrite the reasoning behind it.
+    """
+
+    __tablename__ = "training_plans"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(120))
+    weeks: Mapped[int] = mapped_column(Integer)
+    days_per_week: Mapped[int] = mapped_column(Integer)
+    summary: Mapped[str] = mapped_column(Text)
+    focus_areas: Mapped[list] = mapped_column(JSON)
+    cautions: Mapped[list] = mapped_column(JSON)
+    # [{week, day, title, session_type, focus, blocks: [...], notes}]
+    sessions: Mapped[list] = mapped_column(JSON)
+    # The ranked weaknesses this plan was generated from.
+    weaknesses: Mapped[list] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="plans")
