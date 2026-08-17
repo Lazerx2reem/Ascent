@@ -7,14 +7,18 @@ import type {
   CoachStreamEvent,
   Conversation,
   ConversationDetail,
+  PlanRequest,
   ProgressPoint,
   PyramidEntry,
   SessionCreate,
   StatsSummary,
+  TrainingPlanDetail,
+  TrainingPlanSummary,
   TrainingSession,
   UserProfile,
   VideoDetail,
   VideoSummary,
+  WeaknessReport,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -226,4 +230,15 @@ export const api = {
   /** Streams the coach's reply — iterate the returned generator. */
   sendCoachMessage: (id: number, content: string) =>
     sseStream<CoachStreamEvent>(`/coach/conversations/${id}/messages`, { content }),
+
+  weaknesses: () => request<WeaknessReport>("/training/weaknesses"),
+  listPlans: () => request<TrainingPlanSummary[]>("/training/plans"),
+  getPlan: (id: number) => request<TrainingPlanDetail>(`/training/plans/${id}`),
+  createPlan: (body: PlanRequest = {}) =>
+    request<TrainingPlanDetail>("/training/plans", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  deletePlan: (id: number) =>
+    request<void>(`/training/plans/${id}`, { method: "DELETE" }),
 };

@@ -174,3 +174,64 @@ export type CoachStreamEvent =
   | { type: "tool"; name: string }
   | { type: "done"; message_id: number }
   | { type: "error"; message: string };
+
+// ---------- Weaknesses & training plans ----------
+
+/** Priority of addressing a weakness — not a quality band. */
+export type WeaknessSeverity = "high" | "moderate" | "low";
+
+export interface Weakness {
+  key: string;
+  label: string;
+  focus: string;
+  /** 0-100, lower means weaker. */
+  score: number;
+  severity: WeaknessSeverity;
+  summary: string;
+  evidence: string[];
+  advice: string;
+}
+
+export interface WeaknessReport {
+  weaknesses: Weakness[];
+  /** Things the athlete isn't logging that would unlock more detectors. */
+  data_gaps: string[];
+}
+
+export interface PlanBlock {
+  exercise: string;
+  detail: string;
+  sets: number;
+}
+
+export interface PlannedSession {
+  week: number;
+  day: number;
+  title: string;
+  session_type: SessionType;
+  focus: string;
+  blocks: PlanBlock[];
+  notes: string;
+}
+
+export interface TrainingPlanSummary {
+  id: number;
+  title: string;
+  weeks: number;
+  days_per_week: number;
+  summary: string;
+  focus_areas: string[];
+  created_at: string;
+}
+
+export interface TrainingPlanDetail extends TrainingPlanSummary {
+  cautions: string[];
+  sessions: PlannedSession[];
+  weaknesses: Weakness[];
+}
+
+export interface PlanRequest {
+  weeks?: number;
+  days_per_week?: number;
+  title?: string;
+}
