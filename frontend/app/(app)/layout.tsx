@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/logbook", label: "Logbook" },
   { href: "/sessions", label: "Sessions" },
   { href: "/videos", label: "Analysis" },
+  { href: "/training", label: "Training" },
   { href: "/coach", label: "Coach" },
 ];
 
