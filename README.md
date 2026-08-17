@@ -17,7 +17,7 @@ AI-powered video analysis of climbing attempts.
 - [x] **Phase 1** — auth, logbook, session tracker, stats dashboard
 - [x] **Phase 2** — video upload + pose-analysis pipeline
 - [x] **Phase 3** — AI coach chat
-- [ ] **Phase 4** — weakness detection + training plan generator
+- [x] **Phase 4** — weakness detection + training plan generator
 - [ ] **Phase 5** — stretch features (board import, conditions, community feed)
 
 ## Quickstart
@@ -96,6 +96,44 @@ cd backend && .venv/bin/pytest tests/test_coach.py   # tools, prompt, SSE plumbi
 ```
 
 The tests fake the model turn, so the suite needs no API key.
+
+## Weakness detection & training plans (phase 4)
+
+Under **Training**, Ascent scores eight areas of your climbing 0&ndash;100 — where
+**lower means weaker** — and ranks them worst first:
+
+| Area | What it reads |
+| ---- | ------------- |
+| Wall angle coverage | steep vs low-angle split across logged climbs |
+| Pyramid base | sends one grade below your max vs at it |
+| Movement quality | weakest of the four pose metrics, averaged over videos |
+| First-go success | flash/onsight share of your sends |
+| Dedicated strength work | hangboard/campus/weighted sessions per month |
+| Consistency | share of recent weeks containing a session |
+| Recovery and load | average RPE and hard sessions per week |
+| Volume trend | this month's sends against last month's |
+
+Every finding carries the numbers behind it, so you can disagree with it. A
+detector stays silent rather than guessing when there isn't enough logged data,
+and says what to log instead — no wall angles means no angle finding.
+
+Two judgment calls are baked in. Dedicated finger training is never suggested to
+a climber without a base, since tendons adapt far slower than muscle and that's
+where finger injuries come from. And a high recovery-load finding overrides the
+rest of the plan: it caps the week and steps the block down rather than building.
+
+The generator turns the ranked weaknesses into a periodized block — up to three
+focus areas, sets ramping for three weeks, a deload to finish. Plans store the
+weaknesses they were built from, so an old plan stays readable after the logbook
+moves on. Session blocks use the same `{exercise, detail, sets}` shape as logged
+sessions, so a planned session can be logged as-is.
+
+The engines are pure and independently unit-tested; the AI coach reads the same
+weaknesses through a `get_weaknesses` tool, so chat and plan agree.
+
+```bash
+cd backend && .venv/bin/pytest tests/test_weaknesses.py tests/test_plan.py
+```
 
 ## Configuration
 
