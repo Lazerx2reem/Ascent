@@ -7,7 +7,13 @@ import type { Config } from "tailwindcss";
  * and badges all stay on-palette.
  */
 const config: Config = {
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  // lib/ matters: the severity and status palettes are plain strings there,
+  // and anything not scanned never reaches the stylesheet.
+  content: [
+    "./app/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./lib/**/*.{ts,tsx}",
+  ],
   theme: {
     extend: {
       colors: {
