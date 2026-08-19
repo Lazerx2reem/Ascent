@@ -2,9 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-mist font-sans text-ink antialiased;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+@layer base {
+  body {
+    @apply bg-mist font-sans text-ink antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /**
+   * Ambient alpine haze. A fixed layer behind all content so every page gets
+   * depth without each one painting its own gradient — the flat mist read as
+   * cheap once the cards gained elevation. Sits at z -1 under body's own
+   * background, and never scrolls.
+   */
+  body::before {
+    content: "";
+    @apply pointer-events-none fixed inset-0 -z-10;
+    background-image:
+      radial-gradient(900px 520px at 12% -8%, rgba(176, 201, 223, 0.5), transparent 62%),
+      radial-gradient(760px 460px at 88% 0%, rgba(196, 220, 218, 0.45), transparent 64%);
+  }
+
+  ::selection {
+    @apply bg-lake-200 text-ink;
+  }
+
+  /* Scrollbars on-palette rather than OS grey. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-steel-300;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-steel-400;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  /* Motion here is decorative, so it all comes off when asked. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
 }
 
 @layer components {
@@ -12,19 +62,81 @@ body {
   .field {
     @apply mt-1 w-full rounded-lg border border-steel-200 bg-white px-3 py-2 text-sm
       text-ink shadow-sm transition-colors placeholder:text-steel-400
+      hover:border-steel-300
       focus:border-lake-500 focus:outline-none focus:ring-2 focus:ring-lake-500/30;
   }
 
-  /* Primary action button. */
+  /* Primary action button. Gradient reads as a raised surface under light. */
   .btn-primary {
-    @apply rounded-lg bg-lake-600 px-4 py-2 text-sm font-semibold text-white
-      shadow-sm transition-colors hover:bg-lake-700
+    @apply rounded-lg bg-gradient-to-b from-lake-500 to-lake-600 px-4 py-2 text-sm
+      font-semibold text-white shadow-sm transition-all duration-200
+      hover:from-lake-600 hover:to-lake-700 hover:shadow-glow
       focus:outline-none focus:ring-2 focus:ring-lake-500/40
+      active:translate-y-px
+      disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-sm;
+  }
+
+  /* Secondary action — same geometry, quieter surface. */
+  .btn-secondary {
+    @apply rounded-lg border border-steel-200 bg-white px-4 py-2 text-sm font-semibold
+      text-steel-700 shadow-sm transition-all duration-200
+      hover:border-steel-300 hover:bg-steel-50 hover:text-ink
+      focus:outline-none focus:ring-2 focus:ring-lake-500/30
+      active:translate-y-px
       disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Tertiary — nav items, row actions. No surface until hovered. */
+  .btn-ghost {
+    @apply rounded-lg px-3 py-1.5 text-sm font-medium text-steel-500
+      transition-colors hover:bg-steel-100 hover:text-steel-700
+      focus:outline-none focus:ring-2 focus:ring-lake-500/30;
   }
 
   /* Surface card. */
   .card {
-    @apply rounded-2xl border border-steel-200 bg-white shadow-card;
+    @apply rounded-2xl border border-steel-200 bg-white shadow-card
+      transition-shadow duration-300;
+  }
+
+  /* Opt-in hover response for cards that are themselves a target. */
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5
+      text-[11px] font-semibold;
+  }
+
+  /* Segmented control, e.g. boulder/route on the dashboard. */
+  .segment-group {
+    @apply flex rounded-lg border border-steel-200 bg-steel-50 p-0.5 text-xs font-medium;
+  }
+  .segment {
+    @apply rounded-md px-2.5 py-1 capitalize transition-all duration-200
+      text-steel-500 hover:text-steel-700;
+  }
+  .segment-active {
+    @apply bg-gradient-to-b from-lake-500 to-lake-600 text-white shadow-sm
+      hover:text-white;
+  }
+
+  /**
+   * Loading placeholder. A shaped skeleton beats the word "Loading…" — it
+   * holds the layout so nothing jumps when data lands.
+   */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-steel-100;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.65),
+      transparent
+    );
   }
 }
