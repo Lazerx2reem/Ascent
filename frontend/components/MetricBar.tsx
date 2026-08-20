@@ -11,7 +11,7 @@ export default function MetricBar({ metric }: { metric: PoseMetric }) {
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-semibold text-ink">{metric.label}</span>
         <span className="flex items-center gap-2">
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${styles.badge}`}>
+          <span className={`badge whitespace-nowrap ${styles.badge}`}>
             {styles.label}
           </span>
           <span className="w-8 text-right text-sm font-bold tabular-nums text-ink">

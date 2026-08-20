@@ -11,7 +11,7 @@ export default function WeaknessCard({ weakness }: { weakness: Weakness }) {
         <span className="text-sm font-semibold text-ink">{weakness.label}</span>
         <span className="flex items-center gap-2">
           <span
-            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${styles.badge}`}
+            className={`badge whitespace-nowrap ${styles.badge}`}
           >
             {styles.label}
           </span>
