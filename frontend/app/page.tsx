@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Logo from "@/components/Logo";
 import { getToken } from "@/lib/token";
 
 export default function Home() {
@@ -12,8 +13,9 @@ export default function Home() {
   }, [router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-mist">
-      <p className="text-steel-400">Loading…</p>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-3">
+      <Logo className="h-10 w-10 animate-pulse" />
+      <p className="text-sm text-steel-400">Ascent</p>
     </main>
   );
 }
