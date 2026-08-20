@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ProgressPoint } from "@/lib/types";
 
 const MONTH_NAMES = [
@@ -16,13 +16,20 @@ function monthLabel(month: string): string {
 /**
  * Sends per month as a column chart. Hairline gridlines on clean tick values,
  * 4px rounded caps square at the baseline, and a per-column hover tooltip.
+ * Columns rise from the baseline on mount, left to right.
  */
 export default function MonthlySends({ data }: { data: ProgressPoint[] }) {
   const [hover, setHover] = useState<number | null>(null);
+  const [drawn, setDrawn] = useState(false);
   const max = Math.max(...data.map((d) => d.sends), 1);
   // Clean y ticks: 0, half, max rounded up to an even value
   const top = Math.max(2, Math.ceil(max / 2) * 2);
   const ticks = [0, top / 2, top];
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setDrawn(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   return (
     <div>
@@ -52,15 +59,21 @@ export default function MonthlySends({ data }: { data: ProgressPoint[] }) {
               onMouseLeave={() => setHover(null)}
             >
               <div
-                className={`w-full max-w-6 rounded-t transition-colors ${
-                  hover === i ? "bg-lake-700" : "bg-lake-600"
+                className={`w-full max-w-6 rounded-t bg-gradient-to-t transition-all duration-700 ease-out ${
+                  hover === i
+                    ? "from-lake-700 to-lake-500"
+                    : "from-lake-600 to-lake-400"
                 }`}
-                style={{ height: `${(point.sends / top) * 100}%` }}
+                style={{
+                  height: drawn ? `${(point.sends / top) * 100}%` : 0,
+                  transitionDelay: `${Math.min(i * 35, 400)}ms`,
+                }}
               />
               {hover === i && (
-                <div className="pointer-events-none absolute bottom-full z-10 mb-1 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs text-white shadow-lift">
+                <div className="pointer-events-none absolute bottom-full z-10 mb-1.5 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs text-white shadow-lift">
                   {monthLabel(point.month)} {point.month.slice(0, 4)}:{" "}
                   <span className="font-semibold">{point.sends}</span> sends
+                  <span className="absolute left-1/2 top-full -ml-1 border-4 border-transparent border-t-ink" />
                 </div>
               )}
             </div>
@@ -69,10 +82,12 @@ export default function MonthlySends({ data }: { data: ProgressPoint[] }) {
       </div>
       {/* X labels */}
       <div className="ml-7 mt-1 flex gap-[2px]">
-        {data.map((point) => (
+        {data.map((point, i) => (
           <span
             key={point.month}
-            className="flex-1 text-center text-[10px] text-steel-400"
+            className={`flex-1 text-center text-[10px] transition-colors ${
+              hover === i ? "font-semibold text-steel-700" : "text-steel-400"
+            }`}
           >
             {monthLabel(point.month)}
           </span>
