@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
 import { api, ApiError } from "@/lib/api";
 import { STARTER_PROMPTS, toolLabel, toolSummary } from "@/lib/coach";
 import type { CoachMessage, CoachStatus, Conversation } from "@/lib/types";
@@ -141,16 +143,16 @@ export default function CoachPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Coach</h1>
-        <button onClick={startNew} disabled={busy} className="btn-primary">
-          New chat
-        </button>
-      </div>
-      <p className="mt-1 max-w-2xl text-sm text-steel-500">
-        Ask about your training and the coach will read your own logbook,
-        sessions, and video analyses before answering.
-      </p>
+      <PageHeader
+        eyebrow="Ask"
+        title="Coach"
+        description="Ask about your training and the coach reads your own logbook, sessions, and video analyses before answering."
+        action={
+          <button onClick={startNew} disabled={busy} className="btn-primary">
+            New chat
+          </button>
+        }
+      />
 
       {status && !status.available && (
         <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
@@ -168,10 +170,10 @@ export default function CoachPage() {
           {conversations.map((c) => (
             <div
               key={c.id}
-              className={`group flex items-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors ${
+              className={`group flex items-center gap-1 rounded-lg border-l-2 px-3 py-2 text-sm transition-all duration-200 ${
                 c.id === activeId
-                  ? "bg-lake-50 text-lake-700"
-                  : "text-steel-600 hover:bg-steel-100"
+                  ? "border-lake-500 bg-lake-50 text-lake-700"
+                  : "border-transparent text-steel-600 hover:bg-steel-100"
               }`}
             >
               <button
@@ -196,23 +198,26 @@ export default function CoachPage() {
         <section className="card flex min-h-[28rem] flex-col lg:col-span-3">
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
             {isEmpty && (
-              <div className="py-8 text-center">
-                <p className="text-sm text-steel-500">
-                  Ask anything about your climbing. A few places to start:
-                </p>
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {STARTER_PROMPTS.map((prompt) => (
-                    <button
-                      key={prompt}
-                      onClick={() => void send(prompt)}
-                      disabled={busy || status?.available === false}
-                      className="rounded-full border border-steel-200 px-3 py-1.5 text-sm text-steel-600 transition-colors hover:border-lake-300 hover:bg-lake-50 hover:text-lake-700 disabled:opacity-50"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <EmptyState
+                bare
+                icon="coach"
+                title="Ask anything about your climbing"
+                hint="The coach reads your own data before answering, so it helps to be specific. A few places to start:"
+                action={
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {STARTER_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => void send(prompt)}
+                        disabled={busy || status?.available === false}
+                        className="rounded-full border border-steel-200 bg-white px-3 py-1.5 text-sm text-steel-600 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-lake-300 hover:bg-lake-50 hover:text-lake-700 hover:shadow-card disabled:opacity-50 disabled:hover:translate-y-0"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                }
+              />
             )}
 
             {messages.map((m) => (
@@ -228,7 +233,7 @@ export default function CoachPage() {
                 <div
                   className={
                     m.role === "user"
-                      ? "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-lake-600 px-4 py-2.5 text-sm text-white"
+                      ? "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-gradient-to-br from-lake-500 to-lake-600 px-4 py-2.5 text-sm text-white shadow-sm"
                       : "whitespace-pre-wrap text-sm leading-relaxed text-steel-700"
                   }
                 >
