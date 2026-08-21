@@ -1,6 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
+import { SkeletonRows } from "@/components/Skeleton";
 import { api, ApiError } from "@/lib/api";
 import { V_SCALE, YDS } from "@/lib/grades";
 import type { Climb, ClimbType, SendType, WallAngle } from "@/lib/types";
@@ -93,12 +96,19 @@ export default function LogbookPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Logbook</h1>
-        <button onClick={() => setShowForm((s) => !s)} className="btn-primary">
-          {showForm ? "Cancel" : "Log a climb"}
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Your climbing"
+        title="Logbook"
+        description="Every climb you've logged, newest first — grade, angle, and how it went."
+        action={
+          <button
+            onClick={() => setShowForm((s) => !s)}
+            className={showForm ? "btn-secondary" : "btn-primary"}
+          >
+            {showForm ? "Cancel" : "Log a climb"}
+          </button>
+        }
+      />
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
@@ -220,16 +230,23 @@ export default function LogbookPage() {
       )}
 
       <div className="mt-4 space-y-2">
-        {climbs === null && <p className="text-sm text-steel-400">Loading…</p>}
+        {climbs === null && <SkeletonRows rows={4} />}
         {climbs?.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-steel-300 bg-white/60 p-8 text-center text-sm text-steel-500">
-            No climbs yet — log your first one!
-          </p>
+          <EmptyState
+            icon="logbook"
+            title="No climbs logged yet"
+            hint="Log your first climb and it starts feeding your grade pyramid, your stats, and the coach."
+            action={
+              <button onClick={() => setShowForm(true)} className="btn-primary">
+                Log a climb
+              </button>
+            }
+          />
         )}
         {climbs?.map((climb) => (
           <div
             key={climb.id}
-            className="card flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 transition-shadow hover:shadow-lift"
+            className="card card-hover flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
           >
             <span className="w-12 text-lg font-bold text-lake-700">
               {climb.grade}

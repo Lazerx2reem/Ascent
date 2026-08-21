@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import EmptyState from "@/components/EmptyState";
 import HBarChart from "@/components/HBarChart";
 import MonthlySends from "@/components/MonthlySends";
+import PageHeader from "@/components/PageHeader";
+import { Skeleton, SkeletonChart } from "@/components/Skeleton";
 import StatCard from "@/components/StatCard";
 import { api } from "@/lib/api";
 import type {
@@ -50,43 +53,62 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-ink">Dashboard</h1>
+      <PageHeader
+        eyebrow="Overview"
+        title="Dashboard"
+        description="Your climbing at a glance — what you've sent, how often you're training, and where the volume is going."
+      />
+
+      {summary === null && (
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="card p-4">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="mt-2.5 h-7 w-14" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {empty && (
-        <p className="mt-4 rounded-2xl border border-dashed border-steel-300 bg-white/60 p-8 text-center text-sm text-steel-500">
-          Nothing here yet — log a climb or a session to see your stats.
-        </p>
+        <div className="mt-5">
+          <EmptyState
+            icon="mountain"
+            title="Nothing here yet"
+            hint="Log a climb or a training session and your grade pyramid, monthly sends, and angle volume will start filling in."
+          />
+        </div>
       )}
 
       {summary && !empty && (
         <>
-          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="Total sends" value={String(summary.total_sends)} />
-            <StatCard
-              label="Hardest boulder"
-              value={summary.hardest_boulder ?? "—"}
-            />
-            <StatCard label="Hardest route" value={summary.hardest_route ?? "—"} />
-            <StatCard
-              label="Training hours"
-              value={summary.total_hours.toLocaleString()}
-            />
+          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {[
+              { label: "Total sends", value: String(summary.total_sends), icon: "flame" as const },
+              { label: "Hardest boulder", value: summary.hardest_boulder ?? "—", icon: "mountain" as const },
+              { label: "Hardest route", value: summary.hardest_route ?? "—", icon: "spark" as const },
+              { label: "Training hours", value: summary.total_hours.toLocaleString(), icon: "clock" as const },
+            ].map((stat, i) => (
+              <div
+                key={stat.label}
+                className="animate-fade-up"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <StatCard {...stat} />
+              </div>
+            ))}
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <section className="card p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <h2 className="font-semibold text-ink">Grade pyramid</h2>
-                <div className="flex rounded-lg border border-steel-200 bg-steel-50 p-0.5 text-xs font-medium">
+                <div className="segment-group">
                   {(["boulder", "route"] as const).map((d) => (
                     <button
                       key={d}
                       onClick={() => setDiscipline(d)}
-                      className={`rounded-md px-2.5 py-1 capitalize transition-colors ${
-                        discipline === d
-                          ? "bg-lake-600 text-white shadow-sm"
-                          : "text-steel-500 hover:text-steel-700"
-                      }`}
+                      className={`segment ${discipline === d ? "segment-active" : ""}`}
                     >
                       {d === "boulder" ? "Boulders" : "Routes"}
                     </button>
@@ -95,13 +117,18 @@ export default function DashboardPage() {
               </div>
               <div className="mt-4">
                 {pyramid === null ? (
-                  <p className="text-sm text-steel-400">Loading…</p>
+                  <div className="space-y-2">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Skeleton key={i} className="h-5 w-full" />
+                    ))}
+                  </div>
                 ) : pyramid.length === 0 ? (
-                  <p className="text-sm text-steel-400">
+                  <p className="py-6 text-center text-sm text-steel-400">
                     No {discipline === "boulder" ? "boulder" : "route"} sends yet.
                   </p>
                 ) : (
                   <HBarChart
+                    key={discipline}
                     ariaLabel={`Sends by grade (${discipline})`}
                     data={pyramid.map((p) => ({ label: p.grade, value: p.count }))}
                   />
@@ -113,9 +140,9 @@ export default function DashboardPage() {
               <h2 className="font-semibold text-ink">Sends per month</h2>
               <div className="mt-4">
                 {progress === null ? (
-                  <p className="text-sm text-steel-400">Loading…</p>
+                  <SkeletonChart />
                 ) : progress.length === 0 ? (
-                  <p className="text-sm text-steel-400">No sends yet.</p>
+                  <p className="py-6 text-center text-sm text-steel-400">No sends yet.</p>
                 ) : (
                   <MonthlySends data={progress} />
                 )}
@@ -124,12 +151,16 @@ export default function DashboardPage() {
 
             <section className="card p-5 lg:col-span-2">
               <h2 className="font-semibold text-ink">Volume by wall angle</h2>
-              <p className="text-xs text-steel-400">
+              <p className="mt-0.5 text-xs text-steel-400">
                 All logged climbs with a recorded angle.
               </p>
               <div className="mt-4 max-w-md">
                 {angles === null ? (
-                  <p className="text-sm text-steel-400">Loading…</p>
+                  <div className="space-y-2">
+                    {Array.from({ length: 4 }, (_, i) => (
+                      <Skeleton key={i} className="h-5 w-full" />
+                    ))}
+                  </div>
                 ) : angles.length === 0 ? (
                   <p className="text-sm text-steel-400">
                     Tag climbs with a wall angle to see this.

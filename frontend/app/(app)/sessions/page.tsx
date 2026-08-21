@@ -1,6 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
+import { SkeletonRows } from "@/components/Skeleton";
 import { api, ApiError } from "@/lib/api";
 import type { SessionType, TrainingSession, WorkoutItem } from "@/lib/types";
 
@@ -72,12 +75,19 @@ export default function SessionsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Training sessions</h1>
-        <button onClick={() => setShowForm((s) => !s)} className="btn-primary">
-          {showForm ? "Cancel" : "Log a session"}
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Your training"
+        title="Training sessions"
+        description="Gym days, board sessions, and hangboard work — duration, effort, and what you actually did."
+        action={
+          <button
+            onClick={() => setShowForm((s) => !s)}
+            className={showForm ? "btn-secondary" : "btn-primary"}
+          >
+            {showForm ? "Cancel" : "Log a session"}
+          </button>
+        }
+      />
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
@@ -200,16 +210,23 @@ export default function SessionsPage() {
       )}
 
       <div className="mt-4 space-y-2">
-        {sessions === null && <p className="text-sm text-steel-400">Loading…</p>}
+        {sessions === null && <SkeletonRows rows={4} />}
         {sessions?.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-steel-300 bg-white/60 p-8 text-center text-sm text-steel-500">
-            No sessions yet — log your first one!
-          </p>
+          <EmptyState
+            icon="sessions"
+            title="No sessions logged yet"
+            hint="Logging duration and RPE is what lets the training page spot consistency and recovery problems."
+            action={
+              <button onClick={() => setShowForm(true)} className="btn-primary">
+                Log a session
+              </button>
+            }
+          />
         )}
         {sessions?.map((session) => (
           <div
             key={session.id}
-            className="card flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 transition-shadow hover:shadow-lift"
+            className="card card-hover flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
           >
             <span className="rounded-full bg-sage-100 px-2.5 py-0.5 text-xs font-semibold text-sage-800">
               {TYPE_LABELS[session.session_type]}
