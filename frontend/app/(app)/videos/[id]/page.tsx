@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import MetricBar from "@/components/MetricBar";
 import ScoreDial from "@/components/ScoreDial";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import { api, ApiError } from "@/lib/api";
 import { isPending, SEVERITY } from "@/lib/analysis";
 import type { VideoDetail } from "@/lib/types";
@@ -61,14 +62,36 @@ export default function VideoDetailPage() {
   }
 
   if (error) return <p className="text-sm text-red-600">{error}</p>;
-  if (!video) return <p className="text-sm text-steel-400">Loading…</p>;
+  if (!video) {
+    return (
+      <div>
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="mt-3 h-7 w-64" />
+        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-5">
+          <Skeleton className="aspect-[9/16] w-full rounded-2xl lg:col-span-2" />
+          <div className="space-y-4 lg:col-span-3">
+            <div className="card p-5">
+              <SkeletonText lines={5} />
+            </div>
+            <div className="card p-5">
+              <SkeletonText lines={4} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const a = video.analysis;
 
   return (
     <div>
-      <Link href="/videos" className="text-sm font-medium text-lake-700 hover:underline">
-        ← All videos
+      <Link
+        href="/videos"
+        className="group inline-flex items-center gap-1.5 text-sm font-medium text-lake-700 transition-colors hover:text-lake-800"
+      >
+        <span className="transition-transform duration-200 group-hover:-translate-x-0.5">←</span>
+        All videos
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
@@ -84,9 +107,16 @@ export default function VideoDetailPage() {
       </div>
 
       {isPending(video.status) && (
-        <p className="mt-6 rounded-2xl border border-dashed border-steel-300 bg-white/60 p-8 text-center text-sm text-steel-500">
-          Analyzing your climb… this page updates automatically.
-        </p>
+        <div className="card mt-6 flex flex-col items-center px-6 py-12 text-center">
+          <span className="relative flex h-12 w-12 items-center justify-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-lake-200 opacity-60" />
+            <span className="relative h-3 w-3 rounded-full bg-lake-600" />
+          </span>
+          <p className="mt-4 text-sm font-semibold text-ink">Analyzing your climb</p>
+          <p className="mt-1 text-sm text-steel-500">
+            Running pose estimation over the clip — this page updates itself.
+          </p>
+        </div>
       )}
 
       {video.status === "failed" && (

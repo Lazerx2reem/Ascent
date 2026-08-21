@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import WeaknessCard from "@/components/WeaknessCard";
+import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
+import { Skeleton } from "@/components/Skeleton";
 import { api, ApiError } from "@/lib/api";
 import {
   byWeek,
@@ -70,11 +73,11 @@ export default function TrainingPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-ink">Training</h1>
-      <p className="mt-1 max-w-2xl text-sm text-steel-500">
-        Ascent reads your logbook, sessions, and video analyses to find what&apos;s
-        holding you back, then builds a periodized block around it.
-      </p>
+      <PageHeader
+        eyebrow="Plan"
+        title="Training"
+        description="Ascent reads your logbook, sessions, and video analyses to find what's holding you back, then builds a periodized block around it."
+      />
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
@@ -87,12 +90,21 @@ export default function TrainingPage() {
           </p>
 
           <div className="mt-4 space-y-3">
-            {report === null && <p className="text-sm text-steel-400">Loading…</p>}
+            {report === null &&
+              Array.from({ length: 3 }, (_, i) => (
+                <div key={i} className="rounded-xl border border-steel-200 p-4">
+                  <Skeleton className="h-3.5 w-1/3" />
+                  <Skeleton className="mt-2.5 h-2 w-full" />
+                  <Skeleton className="mt-3 h-3 w-4/5" />
+                </div>
+              ))}
             {report !== null && weaknesses.length === 0 && (
-              <p className="rounded-xl border border-dashed border-steel-300 bg-white/60 p-6 text-center text-sm text-steel-500">
-                Not enough logged yet to find anything honest. Log some climbs and
-                sessions and check back.
-              </p>
+              <EmptyState
+                bare
+                icon="spark"
+                title="Not enough logged yet"
+                hint="There isn't enough history to say anything honest about your weaknesses. Log some climbs and sessions and check back."
+              />
             )}
             {weaknesses.map((weakness) => (
               <WeaknessCard key={weakness.key} weakness={weakness} />
@@ -183,9 +195,11 @@ export default function TrainingPage() {
           </div>
 
           {plan === null ? (
-            <p className="rounded-2xl border border-dashed border-steel-300 bg-white/60 p-8 text-center text-sm text-steel-500">
-              No plan yet — generate one from your current weaknesses.
-            </p>
+            <EmptyState
+              icon="training"
+              title="No plan yet"
+              hint="Generate a block from your current weaknesses — pick a length above and Ascent builds the sessions."
+            />
           ) : (
             <div className="card p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">

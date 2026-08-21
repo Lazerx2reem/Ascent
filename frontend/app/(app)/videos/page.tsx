@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import ScoreDial from "@/components/ScoreDial";
+import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
+import { SkeletonRows } from "@/components/Skeleton";
 import { api, ApiError } from "@/lib/api";
 import { isPending, STATUS_STYLES } from "@/lib/analysis";
 import type { Climb, VideoSummary } from "@/lib/types";
@@ -73,17 +76,16 @@ export default function VideosPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Video Analysis</h1>
-        <button onClick={onSample} disabled={busy} className="btn-primary">
-          Try a sample analysis
-        </button>
-      </div>
-      <p className="mt-1 max-w-2xl text-sm text-steel-500">
-        Upload a climbing attempt and get automated feedback on four movement
-        fundamentals — hip position, center-of-gravity control, silent feet, and
-        body tension — from a MediaPipe pose estimate of your attempt.
-      </p>
+      <PageHeader
+        eyebrow="Movement"
+        title="Video Analysis"
+        description="Upload a climbing attempt for automated feedback on four movement fundamentals — hip position, center-of-gravity control, silent feet, and body tension — from a MediaPipe pose estimate."
+        action={
+          <button onClick={onSample} disabled={busy} className="btn-secondary">
+            Try a sample
+          </button>
+        }
+      />
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
@@ -119,16 +121,23 @@ export default function VideosPage() {
       </form>
 
       <div className="mt-5 space-y-2">
-        {videos === null && <p className="text-sm text-steel-400">Loading…</p>}
+        {videos === null && <SkeletonRows rows={3} />}
         {videos?.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-steel-300 bg-white/60 p-8 text-center text-sm text-steel-500">
-            No videos yet — upload an attempt or try a sample analysis.
-          </p>
+          <EmptyState
+            icon="analysis"
+            title="No attempts uploaded yet"
+            hint="Upload a clip, or generate a sample analysis to see the whole flow without filming anything."
+            action={
+              <button onClick={onSample} disabled={busy} className="btn-primary">
+                Try a sample analysis
+              </button>
+            }
+          />
         )}
         {videos?.map((video) => {
           const status = STATUS_STYLES[video.status];
           return (
-            <div key={video.id} className="card flex items-center gap-4 px-4 py-3">
+            <div key={video.id} className="card card-hover flex items-center gap-4 px-4 py-3">
               {video.analysis ? (
                 <ScoreDial score={video.analysis.overall_score} size={56} label="" />
               ) : (
@@ -139,7 +148,7 @@ export default function VideosPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-ink">{video.original_filename}</p>
                 <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-steel-500">
-                  <span className={`rounded-full px-2 py-0.5 font-semibold ${status.badge}`}>
+                  <span className={`badge whitespace-nowrap ${status.badge}`}>
                     {status.label}
                   </span>
                   <span className="tabular-nums">{video.created_at.slice(0, 10)}</span>
