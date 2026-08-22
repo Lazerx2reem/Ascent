@@ -1,13 +1,25 @@
+import os
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
+from ..config import settings
 from ..database import get_db
 from ..models import Attempt, Climb, User
 from ..schemas import AttemptCreate, AttemptOut, ClimbCreate, ClimbOut, ClimbUpdate
+from ..storage import new_storage_key, storage
 
 router = APIRouter(prefix="/climbs", tags=["climbs"])
 
@@ -87,8 +99,98 @@ def delete_climb(
     db: Session = Depends(get_db),
 ) -> None:
     climb = _get_owned_climb(climb_id, user, db)
+    # Drop the photo too — nothing else references it, so leaving it behind
+    # would orphan bytes in storage that no row can ever reach.
+    if climb.image_key:
+        storage.delete(climb.image_key)
     db.delete(climb)
     db.commit()
+
+
+# ---------- Climb photo ----------
+
+
+@router.put("/{climb_id}/image", response_model=ClimbOut)
+def upload_climb_image(
+    climb_id: int,
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Climb:
+    """Attach (or replace) the climb's photo.
+
+    PUT rather than POST: a climb has at most one photo, so uploading twice
+    should replace rather than accumulate.
+    """
+    if file.content_type not in settings.allowed_image_types:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported type {file.content_type!r}. "
+            f"Allowed: {', '.join(settings.allowed_image_types)}",
+        )
+    climb = _get_owned_climb(climb_id, user, db)
+
+    key = new_storage_key(file.filename or "climb.jpg", prefix="climbs")
+    size = storage.save(key, file.file)
+
+    max_bytes = settings.max_image_mb * 1024 * 1024
+    if size > max_bytes:
+        storage.delete(key)
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Image exceeds {settings.max_image_mb} MB limit.",
+        )
+
+    previous = climb.image_key
+    climb.image_key = key
+    climb.image_content_type = file.content_type
+    climb.image_size_bytes = size
+    db.commit()
+    db.refresh(climb)
+    # Only after the row points at the new key, so a failed commit can't leave
+    # the climb referencing bytes that are already gone.
+    if previous:
+        storage.delete(previous)
+    return climb
+
+
+@router.get("/{climb_id}/image")
+def get_climb_image(
+    climb_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    climb = _get_owned_climb(climb_id, user, db)
+    if not climb.image_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="This climb has no photo."
+        )
+    get_path = getattr(storage, "path", None)
+    if get_path is None:
+        raise HTTPException(status_code=501, detail="Not supported for this backend")
+    path = get_path(climb.image_key)
+    if not os.path.exists(path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Photo file is missing."
+        )
+    return FileResponse(path, media_type=climb.image_content_type or "image/jpeg")
+
+
+@router.delete("/{climb_id}/image", response_model=ClimbOut)
+def delete_climb_image(
+    climb_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Climb:
+    climb = _get_owned_climb(climb_id, user, db)
+    if climb.image_key:
+        storage.delete(climb.image_key)
+    climb.image_key = None
+    climb.image_content_type = None
+    climb.image_size_bytes = None
+    db.commit()
+    db.refresh(climb)
+    return climb
 
 
 # ---------- Attempts on a climb ----------

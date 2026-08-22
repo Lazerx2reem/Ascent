@@ -21,6 +21,17 @@ class Settings(BaseSettings):
         "video/x-matroska",  # .mkv
     ]
 
+    # Climb photos. HEIC is deliberately absent: phones produce it, but no
+    # browser renders it in an <img>, so accepting it would store files the
+    # logbook could never show.
+    max_image_mb: int = 10
+    allowed_image_types: list[str] = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+    ]
+
     # AI coach (phase 3). Without a key the coach endpoints return 503 and the
     # rest of the app is unaffected.
     anthropic_api_key: str | None = None
