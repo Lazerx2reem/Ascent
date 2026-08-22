@@ -69,9 +69,19 @@ class Climb(Base):
     attempt_count: Mapped[int] = mapped_column(Integer, default=1)
     notes: Mapped[str | None] = mapped_column(Text)
     climbed_on: Mapped[date] = mapped_column(Date)
+    # Optional photo of the climb. Bytes live in object storage like video
+    # uploads do; the row only holds the key and what's needed to serve it.
+    image_key: Mapped[str | None] = mapped_column(String(255))
+    image_content_type: Mapped[str | None] = mapped_column(String(60))
+    image_size_bytes: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+    @property
+    def has_image(self) -> bool:
+        """Exposed on ClimbOut so a list row knows whether to show a thumbnail."""
+        return self.image_key is not None
 
     user: Mapped[User] = relationship(back_populates="climbs")
     attempts: Mapped[list["Attempt"]] = relationship(

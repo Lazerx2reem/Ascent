@@ -85,6 +85,7 @@ class ClimbOut(ClimbBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    has_image: bool = False
     created_at: datetime
 
 
