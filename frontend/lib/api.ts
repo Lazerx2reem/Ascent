@@ -86,13 +86,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
-/** Multipart POST (file uploads). Lets the browser set the boundary. */
-async function upload<T>(path: string, form: FormData): Promise<T> {
+/** Multipart upload. Lets the browser set the boundary. */
+async function upload<T>(
+  path: string,
+  form: FormData,
+  method: "POST" | "PUT" = "POST"
+): Promise<T> {
   const token = getToken();
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
-      method: "POST",
+      method,
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
     });
@@ -180,9 +184,20 @@ export const api = {
     request<UserProfile>("/auth/me", { method: "PATCH", body: JSON.stringify(patch) }),
 
   listClimbs: () => request<Climb[]>("/climbs"),
+  getClimb: (id: number) => request<Climb>(`/climbs/${id}`),
   createClimb: (climb: ClimbCreate) =>
     request<Climb>("/climbs", { method: "POST", body: JSON.stringify(climb) }),
   deleteClimb: (id: number) => request<void>(`/climbs/${id}`, { method: "DELETE" }),
+  /** Attach or replace the climb's photo. PUT — a climb has at most one. */
+  uploadClimbImage: (id: number, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return upload<Climb>(`/climbs/${id}/image`, form, "PUT");
+  },
+  deleteClimbImage: (id: number) =>
+    request<Climb>(`/climbs/${id}/image`, { method: "DELETE" }),
+  /** Authorized image fetch as an object URL, or null when there's no photo. */
+  climbImageUrl: (id: number) => fetchObjectUrl(`/climbs/${id}/image`),
 
   listSessions: () => request<TrainingSession[]>("/sessions"),
   createSession: (session: SessionCreate) =>

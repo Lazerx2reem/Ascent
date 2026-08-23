@@ -28,10 +28,12 @@ export interface Climb {
   attempt_count: number;
   notes: string | null;
   climbed_on: string;
+  /** Whether a photo is attached — the bytes are fetched separately. */
+  has_image: boolean;
   created_at: string;
 }
 
-export type ClimbCreate = Omit<Climb, "id" | "created_at">;
+export type ClimbCreate = Omit<Climb, "id" | "created_at" | "has_image">;
 
 export interface WorkoutItem {
   exercise: string;
