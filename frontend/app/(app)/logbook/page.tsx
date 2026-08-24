@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import EmptyState from "@/components/EmptyState";
 import PageHeader from "@/components/PageHeader";
 import { SkeletonRows } from "@/components/Skeleton";
@@ -43,7 +43,21 @@ export default function LogbookPage() {
     new Date().toISOString().slice(0, 10)
   );
   const [notes, setNotes] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const photoInput = useRef<HTMLInputElement>(null);
+
+  // Local preview of the pending file, revoked whenever it's replaced.
+  useEffect(() => {
+    if (!photo) {
+      setPhotoPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(photo);
+    setPhotoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
 
   useEffect(() => {
     api.listClimbs().then(setClimbs).catch((e) => setError(String(e.message)));
@@ -76,10 +90,26 @@ export default function LogbookPage() {
         notes: notes || null,
         climbed_on: climbedOn,
       });
-      setClimbs((prev) => [created, ...(prev ?? [])]);
+      // The climb is created first, then the photo attached to it — the
+      // create endpoint is JSON, and a failed upload shouldn't lose the entry.
+      let saved = created;
+      if (photo) {
+        try {
+          saved = await api.uploadClimbImage(created.id, photo);
+        } catch (err) {
+          setError(
+            err instanceof ApiError
+              ? `Climb saved, but the photo failed: ${err.message}`
+              : "Climb saved, but the photo failed to upload."
+          );
+        }
+      }
+      setClimbs((prev) => [saved, ...(prev ?? [])]);
       setName("");
       setNotes("");
       setAttempts(1);
+      setPhoto(null);
+      if (photoInput.current) photoInput.current.value = "";
       setShowForm(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
@@ -220,6 +250,38 @@ export default function LogbookPage() {
               placeholder="beta, conditions, how it felt…"
               className={inputCls}
             />
+          </label>
+          <label className="block sm:col-span-2 lg:col-span-3">
+            <span className="text-sm font-medium">Photo (optional)</span>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <input
+                ref={photoInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+                className="block flex-1 text-sm text-steel-600 file:mr-3 file:rounded-lg file:border-0 file:bg-lake-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-lake-700 hover:file:bg-lake-100"
+              />
+              {photoPreview && (
+                <span className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photoPreview}
+                    alt="Selected photo preview"
+                    className="h-12 w-12 rounded-lg object-cover ring-1 ring-steel-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhoto(null);
+                      if (photoInput.current) photoInput.current.value = "";
+                    }}
+                    className="text-xs font-medium text-steel-500 hover:text-red-600"
+                  >
+                    Remove
+                  </button>
+                </span>
+              )}
+            </div>
           </label>
           <div className="sm:col-span-2 lg:col-span-3">
             <button type="submit" disabled={busy} className="btn-primary">
