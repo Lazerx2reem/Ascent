@@ -57,6 +57,24 @@ API docs at http://localhost:8000/docs, app at http://localhost:3000.
 - email: `demo@ascent.app`
 - password: `demo1234`
 
+## Climb photos
+
+Logging a climb takes an optional photo, and clicking any row in the logbook
+opens that climb — the picture full width, its details, and its notes. Photos
+can also be added, replaced, or removed later from the detail page.
+
+Bytes go to the same pluggable store the video uploads use (local disk under
+`media/climbs/` in dev, S3-shaped for later); the climb row holds only the
+storage key. Deleting a climb deletes its photo, so nothing is left stranded.
+
+JPEG, PNG, WebP and GIF up to 10 MB (`MAX_IMAGE_MB`). HEIC is refused on
+purpose — phones produce it, but no browser renders it in an `<img>`, so
+accepting it would store files the logbook could never display.
+
+```bash
+cd backend && .venv/bin/pytest tests/test_climb_images.py
+```
+
 ## Video analysis (phase 2)
 
 Under **Analysis**, upload a climbing attempt (mp4/mov/webm/mkv). The backend
@@ -138,8 +156,9 @@ cd backend && .venv/bin/pytest tests/test_weaknesses.py tests/test_plan.py
 ## Configuration
 
 Backend reads `.env` (see `backend/.env.example`): `DATABASE_URL`, `JWT_SECRET`.
-Uploaded videos use a pluggable store — local disk under `media/` in dev
-(`STORAGE_BACKEND`, `MEDIA_ROOT`, `MAX_UPLOAD_MB`), S3-shaped for later.
+Uploaded videos and climb photos share a pluggable store — local disk under
+`media/` in dev (`STORAGE_BACKEND`, `MEDIA_ROOT`, `MAX_UPLOAD_MB`,
+`MAX_IMAGE_MB`), S3-shaped for later.
 The coach reads `ANTHROPIC_API_KEY`, plus optional `COACH_MODEL`,
 `COACH_EFFORT`, `COACH_MAX_TOKENS`, `COACH_MAX_TOOL_ROUNDS`, and
 `COACH_HISTORY_LIMIT`.
