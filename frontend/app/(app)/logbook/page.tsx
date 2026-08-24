@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import ClimbPhoto from "@/components/ClimbPhoto";
 import EmptyState from "@/components/EmptyState";
 import PageHeader from "@/components/PageHeader";
 import { SkeletonRows } from "@/components/Skeleton";
@@ -308,8 +310,26 @@ export default function LogbookPage() {
         {climbs?.map((climb) => (
           <div
             key={climb.id}
-            className="card card-hover flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
+            className="card card-hover relative flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
           >
+            {/* Stretched link: the whole card is the target, but the delete
+                button stays a real sibling rather than a nested control. */}
+            <Link
+              href={`/logbook/${climb.id}`}
+              aria-label={`View ${climb.name}`}
+              className="absolute inset-0 rounded-2xl focus:outline-none focus:ring-2 focus:ring-lake-500/40"
+            />
+            {climb.has_image ? (
+              <ClimbPhoto
+                climbId={climb.id}
+                alt={climb.name}
+                className="h-11 w-11 shrink-0 rounded-lg ring-1 ring-steel-200"
+              />
+            ) : (
+              /* Invisible spacer: keeps every row's text on the same left
+                 edge without drawing an empty box on each photo-less climb. */
+              <span aria-hidden className="h-11 w-11 shrink-0" />
+            )}
             <span className="w-12 text-lg font-bold text-lake-700">
               {climb.grade}
             </span>
@@ -338,7 +358,8 @@ export default function LogbookPage() {
             <button
               onClick={() => onDelete(climb.id)}
               aria-label={`Delete ${climb.name}`}
-              className="text-xs text-steel-400 transition-colors hover:text-red-600"
+              // relative z-10 keeps this above the stretched link.
+              className="relative z-10 text-xs text-steel-400 transition-colors hover:text-red-600"
             >
               ✕
             </button>
