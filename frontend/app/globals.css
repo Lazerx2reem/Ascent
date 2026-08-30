@@ -86,11 +86,36 @@
       disabled:cursor-not-allowed disabled:opacity-50;
   }
 
+  /* Form label. Was written inline 25 times across the app, half of them
+     without a colour, so labels rendered darker on some pages than others. */
+  .label {
+    @apply text-sm font-medium text-steel-700;
+  }
+
+  /* Destructive confirm. Same geometry as primary, unmistakable colour. */
+  .btn-danger {
+    @apply rounded-lg bg-gradient-to-b from-rose-500 to-rose-600 px-4 py-2 text-sm
+      font-semibold text-white shadow-sm transition-all duration-200
+      hover:from-rose-600 hover:to-rose-700
+      focus:outline-none focus:ring-2 focus:ring-rose-500/40
+      active:translate-y-px
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
   /* Tertiary — nav items, row actions. No surface until hovered. */
   .btn-ghost {
     @apply rounded-lg px-3 py-1.5 text-sm font-medium text-steel-500
       transition-colors hover:bg-steel-100 hover:text-steel-700
       focus:outline-none focus:ring-2 focus:ring-lake-500/30;
+  }
+
+  /* Selects otherwise keep the OS arrow, which gives away an unstyled form.
+     Chevron is an inlined SVG in steel-400 so it matches the field text. */
+  select.field {
+    @apply appearance-none bg-no-repeat pr-9;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238B9AA3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.6rem center;
+    background-size: 1.05rem;
   }
 
   /* Surface card. */
