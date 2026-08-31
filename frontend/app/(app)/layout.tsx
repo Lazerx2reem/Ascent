@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 import Icon, { type IconName } from "@/components/Icon";
 import Logo from "@/components/Logo";
 import { clearToken, getToken } from "@/lib/token";
@@ -43,6 +44,7 @@ export default function AppLayout({
   }
 
   return (
+    <ConfirmProvider>
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 border-b border-steel-200/70 bg-white/70 backdrop-blur-xl">
         <nav className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-2.5">
@@ -94,5 +96,6 @@ export default function AppLayout({
         {children}
       </main>
     </div>
+    </ConfirmProvider>
   );
 }
