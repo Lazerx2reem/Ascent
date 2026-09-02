@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import ClimbPhoto from "@/components/ClimbPhoto";
+import { useConfirm } from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
+import FilePicker from "@/components/FilePicker";
 import PageHeader from "@/components/PageHeader";
+import IconButton from "@/components/IconButton";
 import { SkeletonRows } from "@/components/Skeleton";
+import { formatDate } from "@/lib/format";
 import { api, ApiError } from "@/lib/api";
 import { V_SCALE, YDS } from "@/lib/grades";
 import type { Climb, ClimbType, SendType, WallAngle } from "@/lib/types";
@@ -29,6 +33,7 @@ const SEND_STYLES: Record<SendType, string> = {
 const inputCls = "field";
 
 export default function LogbookPage() {
+  const confirm = useConfirm();
   const [climbs, setClimbs] = useState<Climb[] | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +53,6 @@ export default function LogbookPage() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const photoInput = useRef<HTMLInputElement>(null);
 
   // Local preview of the pending file, revoked whenever it's replaced.
   useEffect(() => {
@@ -111,7 +115,6 @@ export default function LogbookPage() {
       setNotes("");
       setAttempts(1);
       setPhoto(null);
-      if (photoInput.current) photoInput.current.value = "";
       setShowForm(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
@@ -121,7 +124,14 @@ export default function LogbookPage() {
   }
 
   async function onDelete(id: number) {
-    if (!window.confirm("Delete this climb?")) return;
+    const climb = climbs?.find((c) => c.id === id);
+    const ok = await confirm({
+      title: `Delete ${climb?.name ?? "this climb"}?`,
+      body: "The climb and its photo are removed for good. This can't be undone.",
+      confirmLabel: "Delete climb",
+      danger: true,
+    });
+    if (!ok) return;
     await api.deleteClimb(id);
     setClimbs((prev) => (prev ?? []).filter((c) => c.id !== id));
   }
@@ -150,7 +160,7 @@ export default function LogbookPage() {
           className="card mt-4 grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3"
         >
           <label className="block sm:col-span-2 lg:col-span-1">
-            <span className="text-sm font-medium">Name</span>
+            <span className="label">Name</span>
             <input
               required
               value={name}
@@ -160,7 +170,7 @@ export default function LogbookPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Type</span>
+            <span className="label">Type</span>
             <select
               value={climbType}
               onChange={(e) => onTypeChange(e.target.value as ClimbType)}
@@ -172,7 +182,7 @@ export default function LogbookPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Grade</span>
+            <span className="label">Grade</span>
             <select
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
@@ -184,7 +194,7 @@ export default function LogbookPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Result</span>
+            <span className="label">Result</span>
             <select
               value={sendType}
               onChange={(e) => setSendType(e.target.value as SendType)}
@@ -201,7 +211,7 @@ export default function LogbookPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Wall angle</span>
+            <span className="label">Wall angle</span>
             <select
               value={wallAngle}
               onChange={(e) => setWallAngle(e.target.value as WallAngle | "")}
@@ -215,7 +225,7 @@ export default function LogbookPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Attempts</span>
+            <span className="label">Attempts</span>
             <input
               type="number"
               min={1}
@@ -225,7 +235,7 @@ export default function LogbookPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Date</span>
+            <span className="label">Date</span>
             <input
               type="date"
               required
@@ -235,7 +245,7 @@ export default function LogbookPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Location</span>
+            <span className="label">Location</span>
             <input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -244,7 +254,7 @@ export default function LogbookPage() {
             />
           </label>
           <label className="block sm:col-span-2 lg:col-span-3">
-            <span className="text-sm font-medium">Notes</span>
+            <span className="label">Notes</span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -253,38 +263,27 @@ export default function LogbookPage() {
               className={inputCls}
             />
           </label>
-          <label className="block sm:col-span-2 lg:col-span-3">
-            <span className="text-sm font-medium">Photo (optional)</span>
+          <div className="block sm:col-span-2 lg:col-span-3">
+            <p className="label">Photo (optional)</p>
             <div className="mt-1 flex flex-wrap items-center gap-3">
-              <input
-                ref={photoInput}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-                className="block flex-1 text-sm text-steel-600 file:mr-3 file:rounded-lg file:border-0 file:bg-lake-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-lake-700 hover:file:bg-lake-100"
-              />
               {photoPreview && (
-                <span className="flex items-center gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photoPreview}
-                    alt="Selected photo preview"
-                    className="h-12 w-12 rounded-lg object-cover ring-1 ring-steel-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPhoto(null);
-                      if (photoInput.current) photoInput.current.value = "";
-                    }}
-                    className="text-xs font-medium text-steel-500 hover:text-red-600"
-                  >
-                    Remove
-                  </button>
-                </span>
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={photoPreview}
+                  alt="Selected photo preview"
+                  className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-steel-200"
+                />
               )}
+              <FilePicker
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                file={photo}
+                onSelect={setPhoto}
+                buttonLabel={photo ? "Change photo" : "Add photo"}
+                emptyLabel="JPEG, PNG, WebP or GIF"
+                className="flex-1"
+              />
             </div>
-          </label>
+          </div>
           <div className="sm:col-span-2 lg:col-span-3">
             <button type="submit" disabled={busy} className="btn-primary">
               {busy ? "Saving…" : "Save climb"}
@@ -353,16 +352,16 @@ export default function LogbookPage() {
               {SEND_LABELS[climb.send_type]}
             </span>
             <span className="text-xs tabular-nums text-steel-400">
-              {climb.climbed_on}
+              {formatDate(climb.climbed_on)}
             </span>
-            <button
-              onClick={() => onDelete(climb.id)}
-              aria-label={`Delete ${climb.name}`}
+            <IconButton
+              icon="trash"
+              label={`Delete ${climb.name}`}
+              onClick={() => void onDelete(climb.id)}
+              tone="danger"
               // relative z-10 keeps this above the stretched link.
-              className="relative z-10 text-xs text-steel-400 transition-colors hover:text-red-600"
-            >
-              ✕
-            </button>
+              className="relative z-10"
+            />
           </div>
         ))}
       </div>
