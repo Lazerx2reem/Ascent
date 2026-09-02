@@ -1,9 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
+import IconButton from "@/components/IconButton";
 import PageHeader from "@/components/PageHeader";
 import { SkeletonRows } from "@/components/Skeleton";
+import { formatDate } from "@/lib/format";
 import { api, ApiError } from "@/lib/api";
 import type { SessionType, TrainingSession, WorkoutItem } from "@/lib/types";
 
@@ -18,6 +21,7 @@ const TYPE_LABELS: Record<SessionType, string> = {
 const inputCls = "field";
 
 export default function SessionsPage() {
+  const confirm = useConfirm();
   const [sessions, setSessions] = useState<TrainingSession[] | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +72,13 @@ export default function SessionsPage() {
   }
 
   async function onDelete(id: number) {
-    if (!window.confirm("Delete this session?")) return;
+    const ok = await confirm({
+      title: "Delete this session?",
+      body: "It stops counting toward your volume, consistency, and load.",
+      confirmLabel: "Delete session",
+      danger: true,
+    });
+    if (!ok) return;
     await api.deleteSession(id);
     setSessions((prev) => (prev ?? []).filter((s) => s.id !== id));
   }
@@ -97,7 +107,7 @@ export default function SessionsPage() {
           className="card mt-4 grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4"
         >
           <label className="block">
-            <span className="text-sm font-medium">Date</span>
+            <span className="label">Date</span>
             <input
               type="date"
               required
@@ -107,7 +117,7 @@ export default function SessionsPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Type</span>
+            <span className="label">Type</span>
             <select
               value={sessionType}
               onChange={(e) => setSessionType(e.target.value as SessionType)}
@@ -121,7 +131,7 @@ export default function SessionsPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Duration (min)</span>
+            <span className="label">Duration (min)</span>
             <input
               type="number"
               min={1}
@@ -131,7 +141,7 @@ export default function SessionsPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">RPE (1–10)</span>
+            <span className="label">RPE (1–10)</span>
             <input
               type="number"
               min={1}
@@ -193,7 +203,7 @@ export default function SessionsPage() {
           </div>
 
           <label className="block sm:col-span-2 lg:col-span-4">
-            <span className="text-sm font-medium">Notes</span>
+            <span className="label">Notes</span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -250,15 +260,14 @@ export default function SessionsPage() {
               )}
             </div>
             <span className="text-xs tabular-nums text-steel-400">
-              {session.session_date}
+              {formatDate(session.session_date)}
             </span>
-            <button
-              onClick={() => onDelete(session.id)}
-              aria-label="Delete session"
-              className="text-xs text-steel-400 transition-colors hover:text-red-600"
-            >
-              ✕
-            </button>
+            <IconButton
+              icon="trash"
+              label="Delete session"
+              onClick={() => void onDelete(session.id)}
+              tone="danger"
+            />
           </div>
         ))}
       </div>
