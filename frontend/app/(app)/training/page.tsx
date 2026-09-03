@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import WeaknessCard from "@/components/WeaknessCard";
+import { useConfirm } from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
+import IconButton from "@/components/IconButton";
 import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/Skeleton";
+import { formatDate } from "@/lib/format";
 import { api, ApiError } from "@/lib/api";
 import {
   byWeek,
@@ -20,6 +23,7 @@ import type {
 } from "@/lib/types";
 
 export default function TrainingPage() {
+  const confirm = useConfirm();
   const [report, setReport] = useState<WeaknessReport | null>(null);
   const [plans, setPlans] = useState<TrainingPlanSummary[]>([]);
   const [plan, setPlan] = useState<TrainingPlanDetail | null>(null);
@@ -59,7 +63,13 @@ export default function TrainingPage() {
   }
 
   async function onDelete(id: number) {
-    if (!window.confirm("Delete this plan?")) return;
+    const ok = await confirm({
+      title: "Delete this plan?",
+      body: "The block and the weaknesses it was built from are both removed.",
+      confirmLabel: "Delete plan",
+      danger: true,
+    });
+    if (!ok) return;
     await api.deletePlan(id);
     const remaining = plans.filter((p) => p.id !== id);
     setPlans(remaining);
@@ -133,7 +143,7 @@ export default function TrainingPage() {
             <h2 className="font-semibold text-ink">Build a block</h2>
             <div className="mt-3 flex flex-wrap items-end gap-3">
               <label className="block">
-                <span className="text-sm font-medium text-steel-700">Weeks</span>
+                <span className="label">Weeks</span>
                 <select
                   value={weeks}
                   onChange={(e) => setWeeks(Number(e.target.value))}
@@ -147,7 +157,7 @@ export default function TrainingPage() {
                 </select>
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-steel-700">
+                <span className="label">
                   Sessions per week
                 </span>
                 <select
@@ -181,13 +191,13 @@ export default function TrainingPage() {
                     <button onClick={() => void selectPlan(p.id)} className="font-medium">
                       {p.title}
                     </button>
-                    <button
+                    <IconButton
+                      icon="trash"
+                      label={`Delete ${p.title}`}
                       onClick={() => void onDelete(p.id)}
-                      aria-label={`Delete ${p.title}`}
-                      className="text-steel-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
-                    >
-                      ✕
-                    </button>
+                      tone="danger"
+                      className="-mr-1.5 h-6 w-6"
+                    />
                   </span>
                 ))}
               </div>
@@ -205,7 +215,7 @@ export default function TrainingPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="font-semibold text-ink">{plan.title}</h2>
                 <span className="text-xs text-steel-500">
-                  {plan.created_at.slice(0, 10)}
+                  {formatDate(plan.created_at)}
                 </span>
               </div>
               <p className="mt-1 text-sm text-steel-600">{plan.summary}</p>

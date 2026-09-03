@@ -1,13 +1,16 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
+import IconButton from "@/components/IconButton";
 import PageHeader from "@/components/PageHeader";
 import { api, ApiError } from "@/lib/api";
 import { STARTER_PROMPTS, toolLabel, toolSummary } from "@/lib/coach";
 import type { CoachMessage, CoachStatus, Conversation } from "@/lib/types";
 
 export default function CoachPage() {
+  const confirm = useConfirm();
   const [status, setStatus] = useState<CoachStatus | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -50,7 +53,13 @@ export default function CoachPage() {
   }
 
   async function onDelete(id: number) {
-    if (!window.confirm("Delete this conversation?")) return;
+    const ok = await confirm({
+      title: "Delete this conversation?",
+      body: "The whole transcript goes with it.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     await api.deleteConversation(id);
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (id === activeId) startNew();
@@ -163,9 +172,14 @@ export default function CoachPage() {
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-4">
         {/* Conversation list */}
-        <aside className="space-y-1 lg:col-span-1">
+        <aside className="card h-max p-2 lg:col-span-1">
+          <p className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-steel-400">
+            Conversations
+          </p>
           {conversations.length === 0 && (
-            <p className="text-sm text-steel-400">No conversations yet.</p>
+            <p className="px-2 pb-2 pt-1 text-sm text-steel-400">
+              Nothing yet — ask a question to start one.
+            </p>
           )}
           {conversations.map((c) => (
             <div
@@ -183,13 +197,13 @@ export default function CoachPage() {
               >
                 {c.title}
               </button>
-              <button
+              <IconButton
+                icon="trash"
+                label={`Delete ${c.title}`}
                 onClick={() => void onDelete(c.id)}
-                aria-label={`Delete ${c.title}`}
-                className="text-xs text-steel-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
-              >
-                ✕
-              </button>
+                tone="danger"
+                className="h-7 w-7"
+              />
             </div>
           ))}
         </aside>

@@ -3,21 +3,25 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import ScoreDial from "@/components/ScoreDial";
+import { useConfirm } from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
+import FilePicker from "@/components/FilePicker";
+import IconButton from "@/components/IconButton";
 import PageHeader from "@/components/PageHeader";
 import { SkeletonRows } from "@/components/Skeleton";
+import { formatDate } from "@/lib/format";
 import { api, ApiError } from "@/lib/api";
 import { isPending, STATUS_STYLES } from "@/lib/analysis";
 import type { Climb, VideoSummary } from "@/lib/types";
 
 export default function VideosPage() {
+  const confirm = useConfirm();
   const [videos, setVideos] = useState<VideoSummary[] | null>(null);
   const [climbs, setClimbs] = useState<Climb[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [climbId, setClimbId] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
 
   async function refresh() {
     const list = await api.listVideos();
@@ -46,7 +50,6 @@ export default function VideosPage() {
       await api.uploadVideo(file, climbId ? Number(climbId) : undefined);
       setFile(null);
       setClimbId("");
-      if (fileInput.current) fileInput.current.value = "";
       await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Upload failed");
@@ -69,7 +72,13 @@ export default function VideosPage() {
   }
 
   async function onDelete(id: number) {
-    if (!window.confirm("Delete this video and its analysis?")) return;
+    const ok = await confirm({
+      title: "Delete this video?",
+      body: "The clip and its movement analysis are both removed.",
+      confirmLabel: "Delete video",
+      danger: true,
+    });
+    if (!ok) return;
     await api.deleteVideo(id);
     setVideos((prev) => (prev ?? []).filter((v) => v.id !== id));
   }
@@ -90,18 +99,19 @@ export default function VideosPage() {
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
       <form onSubmit={onUpload} className="card mt-4 flex flex-wrap items-end gap-4 p-5">
-        <label className="block">
-          <span className="text-sm font-medium text-steel-700">Video file</span>
-          <input
-            ref={fileInput}
-            type="file"
+        <div className="block">
+          <p className="label">Video file</p>
+          <FilePicker
             accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="mt-1 block w-full text-sm text-steel-600 file:mr-3 file:rounded-lg file:border-0 file:bg-lake-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-lake-700 hover:file:bg-lake-100"
+            file={file}
+            onSelect={setFile}
+            buttonLabel="Choose clip"
+            emptyLabel="mp4, mov, webm or mkv"
+            className="mt-1"
           />
-        </label>
+        </div>
         <label className="block">
-          <span className="text-sm font-medium text-steel-700">Link to a climb (optional)</span>
+          <span className="label">Link to a climb (optional)</span>
           <select
             value={climbId}
             onChange={(e) => setClimbId(e.target.value)}
@@ -151,7 +161,7 @@ export default function VideosPage() {
                   <span className={`badge whitespace-nowrap ${status.badge}`}>
                     {status.label}
                   </span>
-                  <span className="tabular-nums">{video.created_at.slice(0, 10)}</span>
+                  <span className="tabular-nums">{formatDate(video.created_at)}</span>
                   {video.duration_seconds != null && (
                     <span>{video.duration_seconds.toFixed(1)}s</span>
                   )}
@@ -168,13 +178,12 @@ export default function VideosPage() {
                   View feedback
                 </Link>
               )}
-              <button
-                onClick={() => onDelete(video.id)}
-                aria-label="Delete video"
-                className="text-xs text-steel-400 transition-colors hover:text-red-600"
-              >
-                ✕
-              </button>
+              <IconButton
+                icon="trash"
+                label="Delete video"
+                onClick={() => void onDelete(video.id)}
+                tone="danger"
+              />
             </div>
           );
         })}
