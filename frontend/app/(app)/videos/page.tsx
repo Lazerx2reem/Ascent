@@ -9,7 +9,7 @@ import FilePicker from "@/components/FilePicker";
 import IconButton from "@/components/IconButton";
 import PageHeader from "@/components/PageHeader";
 import { SkeletonRows } from "@/components/Skeleton";
-import { formatDate } from "@/lib/format";
+import { formatTimestamp } from "@/lib/format";
 import { api, ApiError } from "@/lib/api";
 import { isPending, STATUS_STYLES } from "@/lib/analysis";
 import type { Climb, VideoSummary } from "@/lib/types";
@@ -161,7 +161,7 @@ export default function VideosPage() {
                   <span className={`badge whitespace-nowrap ${status.badge}`}>
                     {status.label}
                   </span>
-                  <span className="tabular-nums">{formatDate(video.created_at)}</span>
+                  <span className="tabular-nums">{formatTimestamp(video.created_at)}</span>
                   {video.duration_seconds != null && (
                     <span>{video.duration_seconds.toFixed(1)}s</span>
                   )}

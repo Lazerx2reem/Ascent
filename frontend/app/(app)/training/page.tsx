@@ -8,7 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import IconButton from "@/components/IconButton";
 import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/Skeleton";
-import { formatDate } from "@/lib/format";
+import { formatTimestamp } from "@/lib/format";
 import { api, ApiError } from "@/lib/api";
 import {
   byWeek,
@@ -215,7 +215,7 @@ export default function TrainingPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="font-semibold text-ink">{plan.title}</h2>
                 <span className="text-xs text-steel-500">
-                  {formatDate(plan.created_at)}
+                  {formatTimestamp(plan.created_at)}
                 </span>
               </div>
               <p className="mt-1 text-sm text-steel-600">{plan.summary}</p>
