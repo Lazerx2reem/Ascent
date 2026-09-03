@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ClimbPhoto from "@/components/ClimbPhoto";
+import { useConfirm } from "@/components/ConfirmDialog";
+import FilePicker from "@/components/FilePicker";
 import Icon from "@/components/Icon";
 import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import { api, ApiError } from "@/lib/api";
+import { formatDate } from "@/lib/format";
 import type { Climb, SendType } from "@/lib/types";
 
 const SEND_LABELS: Record<SendType, string> = {
@@ -30,13 +33,13 @@ export default function ClimbDetailPage() {
   const climbId = Number(id);
   const router = useRouter();
 
+  const confirm = useConfirm();
   const [climb, setClimb] = useState<Climb | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // Bumped on every photo change so ClimbPhoto remounts and refetches rather
   // than showing the replaced image from its first render.
   const [photoVersion, setPhotoVersion] = useState(0);
-  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api
@@ -56,12 +59,17 @@ export default function ClimbDetailPage() {
       setError(err instanceof ApiError ? err.message : "Could not upload that photo");
     } finally {
       setBusy(false);
-      if (fileInput.current) fileInput.current.value = "";
     }
   }
 
   async function onRemovePhoto() {
-    if (!window.confirm("Remove this photo?")) return;
+    const ok = await confirm({
+      title: "Remove this photo?",
+      body: "The climb itself stays in your logbook.",
+      confirmLabel: "Remove photo",
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       setClimb(await api.deleteClimbImage(climbId));
@@ -74,7 +82,13 @@ export default function ClimbDetailPage() {
   }
 
   async function onDeleteClimb() {
-    if (!window.confirm("Delete this climb and its photo?")) return;
+    const ok = await confirm({
+      title: `Delete ${climb?.name ?? "this climb"}?`,
+      body: "The climb and its photo are removed for good. This can't be undone.",
+      confirmLabel: "Delete climb",
+      danger: true,
+    });
+    if (!ok) return;
     await api.deleteClimb(climbId);
     router.push("/logbook");
   }
@@ -102,7 +116,7 @@ export default function ClimbDetailPage() {
     ["Wall angle", climb.wall_angle ?? "—"],
     ["Location", climb.location ?? "—"],
     ["Attempts", String(climb.attempt_count)],
-    ["Date", climb.climbed_on],
+    ["Date", formatDate(climb.climbed_on)],
   ];
 
   return (
@@ -154,13 +168,14 @@ export default function ClimbDetailPage() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <input
-              ref={fileInput}
-              type="file"
+            <FilePicker
               accept="image/jpeg,image/png,image/webp,image/gif"
+              file={null}
+              onSelect={(f) => void onPickPhoto(f)}
+              buttonLabel={climb.has_image ? "Replace photo" : "Add photo"}
+              emptyLabel="JPEG, PNG, WebP or GIF"
               disabled={busy}
-              onChange={(e) => void onPickPhoto(e.target.files?.[0] ?? null)}
-              className="block flex-1 text-sm text-steel-600 file:mr-3 file:rounded-lg file:border-0 file:bg-lake-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-lake-700 hover:file:bg-lake-100 disabled:opacity-50"
+              className="flex-1"
             />
             {climb.has_image && (
               <button
