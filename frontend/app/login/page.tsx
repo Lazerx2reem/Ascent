@@ -45,7 +45,7 @@ export default function LoginPage() {
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <label className="block">
-            <span className="text-sm font-medium text-steel-700">Email</span>
+            <span className="label">Email</span>
             <input
               type="email"
               required
@@ -55,7 +55,7 @@ export default function LoginPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium text-steel-700">Password</span>
+            <span className="label">Password</span>
             <input
               type="password"
               required
