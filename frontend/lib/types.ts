@@ -10,6 +10,8 @@ export interface UserProfile {
   created_at: string;
 }
 
+export type ProfileUpdate = Partial<Omit<UserProfile, "id" | "email" | "created_at">>;
+
 export type GradeSystem = "v_scale" | "yds";
 export type ClimbType = "boulder" | "sport" | "trad";
 export type WallAngle = "slab" | "vertical" | "overhang" | "roof";

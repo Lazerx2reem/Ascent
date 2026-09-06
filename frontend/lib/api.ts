@@ -8,6 +8,7 @@ import type {
   Conversation,
   ConversationDetail,
   PlanRequest,
+  ProfileUpdate,
   ProgressPoint,
   PyramidEntry,
   SessionCreate,
@@ -180,7 +181,7 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
   me: () => request<UserProfile>("/auth/me"),
-  updateProfile: (patch: Partial<UserProfile>) =>
+  updateProfile: (patch: ProfileUpdate) =>
     request<UserProfile>("/auth/me", { method: "PATCH", body: JSON.stringify(patch) }),
 
   listClimbs: () => request<Climb[]>("/climbs"),
