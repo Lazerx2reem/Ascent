@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { SkeletonText } from "@/components/Skeleton";
 import { api, ApiError } from "@/lib/api";
@@ -79,7 +81,11 @@ function GradeRange({
   );
 }
 
-export default function ProfilePage() {
+function ProfileForm() {
+  // Set by the register page: a new account lands here first, because an
+  // empty profile is what the coach sees.
+  const welcome = useSearchParams().get("welcome") === "1";
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -136,9 +142,13 @@ export default function ProfilePage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Your account"
+        eyebrow={welcome ? "Welcome to Ascent" : "Your account"}
         title="Profile"
-        description="The coach reads this before every answer, so the more it knows about how and where you climb, the more specific its advice gets."
+        description={
+          welcome
+            ? "A minute here makes the coach and your training plans much sharper — they read this before every answer. Everything is optional and editable later."
+            : "The coach reads this before every answer, so the more it knows about how and where you climb, the more specific its advice gets."
+        }
       />
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
@@ -209,10 +219,29 @@ export default function ProfilePage() {
             <button type="submit" disabled={busy} className="btn-primary">
               {busy ? "Saving…" : "Save profile"}
             </button>
+            {saved && welcome && (
+              <Link href="/dashboard" className="btn-secondary">
+                Go to dashboard
+              </Link>
+            )}
+            {!saved && welcome && (
+              <Link href="/dashboard" className="text-sm font-medium text-steel-500 hover:text-steel-700">
+                Skip for now
+              </Link>
+            )}
             {saved && <span className="text-sm text-sage-700">Saved.</span>}
           </div>
         </form>
       )}
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  // useSearchParams needs a Suspense boundary under the app router.
+  return (
+    <Suspense>
+      <ProfileForm />
+    </Suspense>
   );
 }
