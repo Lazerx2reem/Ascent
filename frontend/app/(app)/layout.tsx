@@ -78,6 +78,19 @@ export default function AppLayout({
             })}
           </div>
 
+          <Link
+            href="/profile"
+            aria-current={pathname.startsWith("/profile") ? "page" : undefined}
+            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
+              pathname.startsWith("/profile")
+                ? "bg-steel-100 text-ink"
+                : "text-steel-500 hover:bg-steel-100 hover:text-steel-700"
+            }`}
+          >
+            <Icon name="user" className="h-4 w-4" />
+            <span className="hidden md:inline">Profile</span>
+          </Link>
+
           <button
             onClick={() => {
               clearToken();
