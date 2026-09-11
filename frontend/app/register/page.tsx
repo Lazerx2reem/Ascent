@@ -22,7 +22,8 @@ export default function RegisterPage() {
     try {
       const { access_token } = await api.register(email, password, displayName);
       setToken(access_token);
-      router.push("/dashboard");
+      // Profile first: the coach reads it on every turn, and a new account's is empty.
+      router.push("/profile?welcome=1");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
       setBusy(false);
