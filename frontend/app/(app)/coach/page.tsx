@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
@@ -21,10 +22,22 @@ export default function CoachPage() {
   const [activeTools, setActiveTools] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The system prompt inlines the profile; an empty one costs the coach context.
+  const [profileEmpty, setProfileEmpty] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.coachStatus().then(setStatus).catch(() => {});
+    api
+      .me()
+      .then((p) =>
+        setProfileEmpty(
+          ![p.climbing_style, p.home_gym, p.grade_range_boulder, p.grade_range_route, p.goals].some(
+            Boolean
+          )
+        )
+      )
+      .catch(() => {});
     api
       .listConversations()
       .then((list) => {
@@ -167,6 +180,16 @@ export default function CoachPage() {
         <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           The coach isn&apos;t configured yet. Set <code>ANTHROPIC_API_KEY</code> in{" "}
           <code>backend/.env</code> and restart the API.
+        </p>
+      )}
+
+      {profileEmpty && (
+        <p className="mt-4 rounded-xl border border-lake-200 bg-lake-50 p-4 text-sm text-lake-800">
+          The coach doesn&apos;t know your grades, goals, or home gym yet.{" "}
+          <Link href="/profile" className="font-semibold underline underline-offset-2">
+            Fill in your profile
+          </Link>{" "}
+          for more specific advice.
         </p>
       )}
 
