@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import ClimbForm from "@/components/ClimbForm";
 import ClimbPhoto from "@/components/ClimbPhoto";
 import { useConfirm } from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
@@ -11,8 +12,7 @@ import IconButton from "@/components/IconButton";
 import { SkeletonRows } from "@/components/Skeleton";
 import { formatDate } from "@/lib/format";
 import { api, ApiError } from "@/lib/api";
-import { V_SCALE, YDS } from "@/lib/grades";
-import type { Climb, ClimbType, SendType, WallAngle } from "@/lib/types";
+import type { Climb, ClimbCreate, SendType } from "@/lib/types";
 
 const SEND_LABELS: Record<SendType, string> = {
   flash: "Flash",
@@ -30,26 +30,12 @@ const SEND_STYLES: Record<SendType, string> = {
   project: "bg-steel-100 text-steel-500",
 };
 
-const inputCls = "field";
-
 export default function LogbookPage() {
   const confirm = useConfirm();
   const [climbs, setClimbs] = useState<Climb[] | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
-  const [name, setName] = useState("");
-  const [climbType, setClimbType] = useState<ClimbType>("boulder");
-  const [grade, setGrade] = useState("V2");
-  const [sendType, setSendType] = useState<SendType>("redpoint");
-  const [wallAngle, setWallAngle] = useState<WallAngle | "">("");
-  const [attempts, setAttempts] = useState(1);
-  const [location, setLocation] = useState("");
-  const [climbedOn, setClimbedOn] = useState(() =>
-    new Date().toISOString().slice(0, 10)
-  );
-  const [notes, setNotes] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -69,33 +55,11 @@ export default function LogbookPage() {
     api.listClimbs().then(setClimbs).catch((e) => setError(String(e.message)));
   }, []);
 
-  const gradeOptions = climbType === "boulder" ? V_SCALE : YDS;
-
-  function onTypeChange(type: ClimbType) {
-    setClimbType(type);
-    setGrade(type === "boulder" ? "V2" : "5.10a");
-    // Onsight is for ropes, flash for boulders — keep the selection sane.
-    if (type === "boulder" && sendType === "onsight") setSendType("flash");
-    if (type !== "boulder" && sendType === "flash") setSendType("onsight");
-  }
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function onSubmit(values: ClimbCreate) {
     setBusy(true);
     setError(null);
     try {
-      const created = await api.createClimb({
-        name,
-        grade,
-        grade_system: climbType === "boulder" ? "v_scale" : "yds",
-        climb_type: climbType,
-        wall_angle: wallAngle === "" ? null : wallAngle,
-        location: location || null,
-        send_type: sendType,
-        attempt_count: attempts,
-        notes: notes || null,
-        climbed_on: climbedOn,
-      });
+      const created = await api.createClimb(values);
       // The climb is created first, then the photo attached to it — the
       // create endpoint is JSON, and a failed upload shouldn't lose the entry.
       let saved = created;
@@ -111,9 +75,6 @@ export default function LogbookPage() {
         }
       }
       setClimbs((prev) => [saved, ...(prev ?? [])]);
-      setName("");
-      setNotes("");
-      setAttempts(1);
       setPhoto(null);
       setShowForm(false);
     } catch (err) {
@@ -155,141 +116,32 @@ export default function LogbookPage() {
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
       {showForm && (
-        <form
-          onSubmit={onSubmit}
-          className="card mt-4 grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3"
+        <ClimbForm
+          submitLabel="Save climb"
+          busy={busy}
+          onSubmit={(values) => void onSubmit(values)}
+          className="mt-4"
         >
-          <label className="block sm:col-span-2 lg:col-span-1">
-            <span className="label">Name</span>
-            <input
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Cave Classic"
-              className={inputCls}
-            />
-          </label>
-          <label className="block">
-            <span className="label">Type</span>
-            <select
-              value={climbType}
-              onChange={(e) => onTypeChange(e.target.value as ClimbType)}
-              className={inputCls}
-            >
-              <option value="boulder">Boulder</option>
-              <option value="sport">Sport</option>
-              <option value="trad">Trad</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="label">Grade</span>
-            <select
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              className={inputCls}
-            >
-              {gradeOptions.map((g) => (
-                <option key={g}>{g}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="label">Result</span>
-            <select
-              value={sendType}
-              onChange={(e) => setSendType(e.target.value as SendType)}
-              className={inputCls}
-            >
-              {climbType === "boulder" ? (
-                <option value="flash">Flash</option>
-              ) : (
-                <option value="onsight">Onsight</option>
-              )}
-              <option value="redpoint">Redpoint</option>
-              <option value="repeat">Repeat</option>
-              <option value="project">Project (not sent)</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="label">Wall angle</span>
-            <select
-              value={wallAngle}
-              onChange={(e) => setWallAngle(e.target.value as WallAngle | "")}
-              className={inputCls}
-            >
-              <option value="">—</option>
-              <option value="slab">Slab</option>
-              <option value="vertical">Vertical</option>
-              <option value="overhang">Overhang</option>
-              <option value="roof">Roof</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="label">Attempts</span>
-            <input
-              type="number"
-              min={1}
-              value={attempts}
-              onChange={(e) => setAttempts(Number(e.target.value))}
-              className={inputCls}
-            />
-          </label>
-          <label className="block">
-            <span className="label">Date</span>
-            <input
-              type="date"
-              required
-              value={climbedOn}
-              onChange={(e) => setClimbedOn(e.target.value)}
-              className={inputCls}
-            />
-          </label>
-          <label className="block">
-            <span className="label">Location</span>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="gym or crag"
-              className={inputCls}
-            />
-          </label>
-          <label className="block sm:col-span-2 lg:col-span-3">
-            <span className="label">Notes</span>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              placeholder="beta, conditions, how it felt…"
-              className={inputCls}
-            />
-          </label>
-          <div className="block sm:col-span-2 lg:col-span-3">
-            <p className="label">Photo (optional)</p>
-            <div className="mt-1 flex flex-wrap items-center gap-3">
-              {photoPreview && (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={photoPreview}
-                  alt="Selected photo preview"
-                  className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-steel-200"
-                />
-              )}
-              <FilePicker
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                file={photo}
-                onSelect={setPhoto}
-                buttonLabel={photo ? "Change photo" : "Add photo"}
-                emptyLabel="JPEG, PNG, WebP or GIF"
-                className="flex-1"
+          <p className="label">Photo (optional)</p>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            {photoPreview && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={photoPreview}
+                alt="Selected photo preview"
+                className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-steel-200"
               />
-            </div>
+            )}
+            <FilePicker
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              file={photo}
+              onSelect={setPhoto}
+              buttonLabel={photo ? "Change photo" : "Add photo"}
+              emptyLabel="JPEG, PNG, WebP or GIF"
+              className="flex-1"
+            />
           </div>
-          <div className="sm:col-span-2 lg:col-span-3">
-            <button type="submit" disabled={busy} className="btn-primary">
-              {busy ? "Saving…" : "Save climb"}
-            </button>
-          </div>
-        </form>
+        </ClimbForm>
       )}
 
       <div className="mt-4 space-y-2">
