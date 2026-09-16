@@ -188,6 +188,8 @@ export const api = {
   getClimb: (id: number) => request<Climb>(`/climbs/${id}`),
   createClimb: (climb: ClimbCreate) =>
     request<Climb>("/climbs", { method: "POST", body: JSON.stringify(climb) }),
+  updateClimb: (id: number, patch: Partial<ClimbCreate>) =>
+    request<Climb>(`/climbs/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
   deleteClimb: (id: number) => request<void>(`/climbs/${id}`, { method: "DELETE" }),
   /** Attach or replace the climb's photo. PUT — a climb has at most one. */
   uploadClimbImage: (id: number, file: File) => {
