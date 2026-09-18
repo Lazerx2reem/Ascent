@@ -41,8 +41,10 @@ export default function ClimbForm({
   const gradeOptions = climbType === "boulder" ? V_SCALE : YDS;
 
   function onTypeChange(type: ClimbType) {
+    const wasBoulder = climbType === "boulder";
     setClimbType(type);
-    setGrade(type === "boulder" ? "V2" : "5.10a");
+    // Sport <-> trad share a scale, so only reset the grade across scales.
+    if (wasBoulder !== (type === "boulder")) setGrade(type === "boulder" ? "V2" : "5.10a");
     // Onsight is for ropes, flash for boulders — keep the selection sane.
     if (type === "boulder" && sendType === "onsight") setSendType("flash");
     if (type !== "boulder" && sendType === "flash") setSendType("onsight");
