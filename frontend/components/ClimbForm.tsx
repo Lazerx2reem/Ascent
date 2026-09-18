@@ -96,6 +96,8 @@ export default function ClimbForm({
       <label className="block">
         <span className="label">Grade</span>
         <select value={grade} onChange={(e) => setGrade(e.target.value)} className="field">
+          {/* A legacy grade outside the scale still shows rather than silently changing. */}
+          {!gradeOptions.includes(grade) && <option>{grade}</option>}
           {gradeOptions.map((g) => (
             <option key={g}>{g}</option>
           ))}
