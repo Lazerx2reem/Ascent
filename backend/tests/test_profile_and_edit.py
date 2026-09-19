@@ -1,4 +1,6 @@
-"""API tests for the endpoints behind the profile page."""
+"""API tests for the endpoints behind the profile page and climb editing."""
+from datetime import date
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -13,6 +15,23 @@ def _auth(email: str) -> dict:
     )
     assert r.status_code == 201, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+def _climb(headers: dict) -> dict:
+    r = client.post(
+        "/climbs",
+        json={
+            "name": "Cave Classic",
+            "grade": "V4",
+            "climb_type": "boulder",
+            "send_type": "project",
+            "attempt_count": 3,
+            "climbed_on": date.today().isoformat(),
+        },
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
 
 
 def test_new_account_profile_starts_empty():
@@ -49,3 +68,30 @@ def test_profile_rejects_blank_name():
     headers = _auth("profile-blank@example.com")
     r = client.patch("/auth/me", json={"display_name": ""}, headers=headers)
     assert r.status_code == 422
+
+
+def test_edit_climb_updates_fields():
+    headers = _auth("edit-climb@example.com")
+    climb = _climb(headers)
+    r = client.patch(
+        f"/climbs/{climb['id']}",
+        json={"grade": "V5", "send_type": "redpoint", "notes": "Heel hook at the lip."},
+        headers=headers,
+    )
+    assert r.status_code == 200, r.text
+    edited = r.json()
+    assert (edited["grade"], edited["send_type"]) == ("V5", "redpoint")
+    assert edited["attempt_count"] == 3  # not in the patch, so unchanged
+    assert client.get(f"/climbs/{climb['id']}", headers=headers).json()["grade"] == "V5"
+
+
+def test_edit_climb_validates_and_is_owner_only():
+    owner = _auth("edit-owner@example.com")
+    other = _auth("edit-other@example.com")
+    climb = _climb(owner)
+
+    r = client.patch(f"/climbs/{climb['id']}", json={"attempt_count": 0}, headers=owner)
+    assert r.status_code == 422
+
+    r = client.patch(f"/climbs/{climb['id']}", json={"grade": "V9"}, headers=other)
+    assert r.status_code == 404
