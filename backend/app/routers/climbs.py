@@ -17,8 +17,8 @@ from sqlalchemy.orm import Session
 from ..auth import get_current_user
 from ..config import settings
 from ..database import get_db
-from ..models import Attempt, Climb, User
-from ..schemas import AttemptCreate, AttemptOut, ClimbCreate, ClimbOut, ClimbUpdate
+from ..models import Climb, User
+from ..schemas import ClimbCreate, ClimbOut, ClimbUpdate
 from ..storage import new_storage_key, storage
 
 router = APIRouter(prefix="/climbs", tags=["climbs"])
@@ -192,32 +192,3 @@ def delete_climb_image(
     db.refresh(climb)
     return climb
 
-
-# ---------- Attempts on a climb ----------
-
-
-@router.get("/{climb_id}/attempts", response_model=list[AttemptOut])
-def list_attempts(
-    climb_id: int,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> list[Attempt]:
-    climb = _get_owned_climb(climb_id, user, db)
-    return sorted(climb.attempts, key=lambda a: (a.attempt_date, a.id))
-
-
-@router.post(
-    "/{climb_id}/attempts", response_model=AttemptOut, status_code=status.HTTP_201_CREATED
-)
-def create_attempt(
-    climb_id: int,
-    payload: AttemptCreate,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> Attempt:
-    climb = _get_owned_climb(climb_id, user, db)
-    attempt = Attempt(climb_id=climb.id, user_id=user.id, **payload.model_dump())
-    db.add(attempt)
-    db.commit()
-    db.refresh(attempt)
-    return attempt
