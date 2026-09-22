@@ -89,22 +89,6 @@ class ClimbOut(ClimbBase):
     created_at: datetime
 
 
-# ---------- Attempts ----------
-
-
-class AttemptCreate(BaseModel):
-    attempt_date: date
-    outcome: str = Field(pattern="^(send|fall|progress)$")
-    notes: str | None = None
-
-
-class AttemptOut(AttemptCreate):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    climb_id: int
-
-
 # ---------- Training sessions ----------
 
 
