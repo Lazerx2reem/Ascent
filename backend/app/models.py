@@ -84,31 +84,6 @@ class Climb(Base):
         return self.image_key is not None
 
     user: Mapped[User] = relationship(back_populates="climbs")
-    attempts: Mapped[list["Attempt"]] = relationship(
-        back_populates="climb", cascade="all, delete-orphan"
-    )
-
-
-class Attempt(Base):
-    """An individual attempt on a climb. Will link to uploaded videos in phase 2."""
-
-    __tablename__ = "attempts"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    climb_id: Mapped[int] = mapped_column(
-        ForeignKey("climbs.id", ondelete="CASCADE"), index=True
-    )
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    attempt_date: Mapped[date] = mapped_column(Date)
-    outcome: Mapped[str] = mapped_column(String(10))  # send / fall / progress
-    notes: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-
-    climb: Mapped[Climb] = relationship(back_populates="attempts")
 
 
 class TrainingSession(Base):
