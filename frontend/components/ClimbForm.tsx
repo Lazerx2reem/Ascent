@@ -53,15 +53,15 @@ export default function ClimbForm({
   function submit(e: FormEvent) {
     e.preventDefault();
     onSubmit({
-      name,
+      name: name.trim(),
       grade,
       grade_system: climbType === "boulder" ? "v_scale" : "yds",
       climb_type: climbType,
       wall_angle: wallAngle === "" ? null : wallAngle,
-      location: location || null,
+      location: location.trim() || null,
       send_type: sendType,
       attempt_count: attempts,
-      notes: notes || null,
+      notes: notes.trim() || null,
       climbed_on: climbedOn,
     });
   }
